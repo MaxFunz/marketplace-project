@@ -3,7 +3,8 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from alembic import context
-from app.db import Base  # Импортируйте вашу базу данных и модели
+from app.database import Base
+
 
 config = context.config
 
@@ -24,7 +25,7 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,  # Если нужен batch mode для SQLite
+            render_as_batch=True,
         )
 
         async with context.begin_transaction():
@@ -39,3 +40,7 @@ def run_migrations_online():
     asyncio.run(run())
 
 run_migrations_online()
+
+
+DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
+engine = create_async_engine(DATABASE_URL, echo=True)

@@ -1,20 +1,30 @@
+# main.py
 from fastapi import FastAPI
-from app.models import Base, User
-from app.db import engine, async_session
+from fastapi.responses import HTMLResponse
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
 
-async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+# Добавьте этот маршрут для страницы авторизации
+@app.get("/login", response_class=HTMLResponse)
+async def login():
+    return """
+    <html>
+        <body>
+            <h2>Login Page</h2>
+            <form method="post" action="/login">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username"><br><br>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password"><br><br>
+                <input type="submit" value="Login">
+            </form>
+        </body>
+    </html>
+    """
 
-@app.on_event("startup")
-async def on_startup():
-    await init_db()
 
-@app.get("/users/{user_id}")
-async def read_user(user_id: int):
-    async with async_session() as session:
-        result = await session.execute(select(User).where(User.id == user_id))
-        user = result.scalars().first()
-        return user
+DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
+engine = create_async_engine(DATABASE_URL, echo=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
