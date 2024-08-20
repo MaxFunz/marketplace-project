@@ -1,46 +1,23 @@
+from __future__ import annotations
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool
+
+from sqlalchemy import create_engine, engine
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import sessionmaker
+
 from alembic import context
-from app.database import Base
 
+from app.database import Base  # Замените на ваш путь
 
-config = context.config
+SQLALCHEMY_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+connectable = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 
-target_metadata = Base.metadata
-
-def run_migrations_online():
-    """Run migrations in 'online' mode."""
-    connectable = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
-        poolclass=pool.NullPool,
-        future=True,
-    )
-
-    async def do_run_migrations(connection):
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            render_as_batch=True,
-        )
-
-        async with context.begin_transaction():
-            await context.run_migrations()
-
-    async def run():
+def run_migrations_online() -> None:
+    async def run() -> None:
         async with connectable.connect() as connection:
-            await connection.run_sync(do_run_migrations)
-
-        await connectable.dispose()
+            await connection.run_sync(Base.metadata.create_all)
 
     asyncio.run(run())
-
-run_migrations_online()
-
-
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
-engine = create_async_engine(DATABASE_URL, echo=True)
