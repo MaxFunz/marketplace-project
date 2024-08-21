@@ -7,3 +7,5 @@ passlib[bcrypt]==1.7.4
 pydantic[email]
 python-multipart
 alembic==1.11.0
+aiokafka==0.7.1
+

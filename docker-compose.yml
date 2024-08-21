@@ -1,35 +1,31 @@
 version: '3.8'
-
 services:
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+      - kafka
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@db/mydatabase"
+
   db:
     image: postgres:13
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: mydatabase
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mydatabase"]
-      interval: 10s
-      retries: 5
-      start_period: 10s
-      timeout: 5s
 
-  web:
-    build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    volumes:
-      - .:/app
+  kafka:
+    image: wurstmeister/kafka:latest
     ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
+      - "9092:9092"
 
-volumes:
-  postgres_data:
+  email-consumer:
+    build: .
+    command: python app/email_consumer.py
+    depends_on:
+      - kafka
+      - web

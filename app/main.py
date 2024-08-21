@@ -19,3 +19,14 @@ async def read_root():
         </body>
     </html>
     """
+
+@app.get("/catalog", response_class=HTMLResponse)
+async def catalog_page():
+    return """
+    <html>
+        <body>
+            <h1>Catalog Page</h1>
+            <p>Welcome to the catalog!</p>
+        </body>
+    </html>
+    """

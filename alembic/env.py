@@ -1,23 +1,45 @@
-from __future__ import annotations
-import asyncio
-from logging.config import fileConfig
-
-from sqlalchemy import create_engine, engine
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy import create_engine, pool
 from alembic import context
+from logging.config import fileConfig
+from sqlalchemy.engine import Connection
 
-from app.database import Base  # Замените на ваш путь
+# Импортируйте ваши модели здесь
+from app.models import Base
 
-SQLALCHEMY_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
+# Эта строка извлекает конфигурацию из файла alembic.ini
+config = context.config
 
-connectable = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+# Настройка логирования из файла конфигурации
+fileConfig(config.config_file_name)
 
-def run_migrations_online() -> None:
-    async def run() -> None:
-        async with connectable.connect() as connection:
-            await connection.run_sync(Base.metadata.create_all)
+# Метаданные из моделей
+target_metadata = Base.metadata
 
-    asyncio.run(run())
+def run_migrations_offline():
+    """Запуск миграций в режиме 'offline'."""
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url, target_metadata=target_metadata, literal_binds=True
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+def run_migrations_online():
+    """Запуск миграций в режиме 'online'."""
+    # Используем синхронный движок
+    connectable = create_engine(
+        config.get_main_option("sqlalchemy.url"),
+        poolclass=pool.NullPool
+    )
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
