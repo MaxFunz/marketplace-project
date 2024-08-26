@@ -11,9 +11,23 @@ async def consume():
     await consumer.start()
     try:
         async for message in consumer:
-            email = message.value.decode("utf-8")
-            await send_email(to_email=email, subject="Registration successful",
-                             body="You have successfully registered.")
+            email_data = message.value.decode("utf-8").split(',')
+            email = email_data[0]
+            action = email_data[1]
+
+            if action == "register":
+                subject = "Registration successful"
+                body = "You have successfully registered."
+            elif action == "login":
+                subject = "Login successful"
+                body = "You have successfully logged in."
+            elif action == "reset_password":
+                subject = "Password reset successful"
+                body = "Your password has been successfully reset."
+            else:
+                continue
+
+            await send_email(to_email=email, subject=subject, body=body)
     finally:
         await consumer.stop()
 

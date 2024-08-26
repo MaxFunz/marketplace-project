@@ -6,7 +6,6 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 async def create_user(db: AsyncSession, user: UserCreate):
     existing_user = await get_user_by_email(db, user.email)
     if existing_user:
@@ -24,7 +23,21 @@ async def create_user(db: AsyncSession, user: UserCreate):
     await db.refresh(db_user)
     return db_user
 
-
 async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalars().first()
+
+async def get_user_by_id(db: AsyncSession, user_id: int):
+    result = await db.execute(select(User).filter(User.id == user_id))
+    return result.scalars().first()
+
+async def update_password(db: AsyncSession, user_id: int, new_password: str):
+    user = await get_user_by_id(db, user_id)
+    if user is None:
+        raise ValueError("User not found")
+
+    user.hashed_password = pwd_context.hash(new_password)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
