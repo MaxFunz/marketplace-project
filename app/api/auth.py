@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud, schemas
 from app.database import get_db
 from app.email import send_email
 
 router = APIRouter()
-
 
 @router.post("/register", response_class=HTMLResponse)
 async def register(email: str = Form(...), password: str = Form(...), confirm_password: str = Form(...),
@@ -19,55 +18,27 @@ async def register(email: str = Form(...), password: str = Form(...), confirm_pa
 
     try:
         db_user = await crud.create_user(db=db, user=user_data)
-        await send_email(email, "Registration successful", "You have successfully registered.")
-        return """
-        <html>
-            <body>
-                <h1>Registration successful</h1>
-                <p>Check your email for confirmation.</p>
-                <a href="/catalog">Go to catalog</a>
-            </body>
-        </html>
-        """
+        send_email(email, "Registration Successful", "You have successfully registered.")
+        return RedirectResponse(url="/catalog", status_code=303)
     except ValueError as e:
         return str(e)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+        raise HTTPException(status_code=400, detail="Error: " + str(e))
 
 @router.post("/login", response_class=HTMLResponse)
 async def login(email: str = Form(...), password: str = Form(...), db: AsyncSession = Depends(get_db)):
-    user = await crud.get_user_by_email(db, email)
-    if not user or not crud.pwd_context.verify(password, user.hashed_password):
+    user = await crud.authenticate_user(db=db, email=email, password=password)
+    if user:
+        send_email(email, "Login Successful", "You have successfully logged in.")
+        return RedirectResponse(url="/catalog", status_code=303)
+    else:
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    return """
-    <html>
-        <body>
-            <h1>Login successful</h1>
-            <a href="/catalog">Go to catalog</a>
-        </body>
-    </html>
-    """
-
-
 @router.post("/reset-password", response_class=HTMLResponse)
-async def reset_password(email: str = Form(...), new_password: str = Form(...),
-                         db: AsyncSession = Depends(get_db)):
-    user = await crud.get_user_by_email(db, email)
-    if not user:
-        raise HTTPException(status_code=400, detail="User not found")
-
+async def reset_password(email: str = Form(...), new_password: str = Form(...), db: AsyncSession = Depends(get_db)):
     try:
-        await crud.update_password(db, user.id, new_password)
-        await send_email(email, "Password reset successful", "Your password has been updated.")
-        return """
-        <html>
-            <body>
-                <h1>Password reset successful</h1>
-                <a href="/auth/login">Login</a>
-            </body>
-        </html>
-        """
+        await crud.reset_password(db=db, email=email, new_password=new_password)
+        send_email(email, "Password Reset Successful", "Your password has been successfully reset.")
+        return "Password reset successful"
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error: " + str(e))

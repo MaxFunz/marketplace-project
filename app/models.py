@@ -11,4 +11,3 @@ class User(Base):
     hashed_password = Column(String)
     phone_number = Column(String, unique=True, index=True)
     name = Column(String)
-

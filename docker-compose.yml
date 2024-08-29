@@ -5,10 +5,10 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     depends_on:
       - db
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db/mydatabase"
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/mydatabase"
 
   db:
     image: postgres:13
@@ -18,3 +18,23 @@ services:
       POSTGRES_DB: mydatabase
     ports:
       - "5432:5432"
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+  email-consumer:
+    build: .
+    command: python app/email_consumer.py
+    depends_on:
+      - kafka
+      - web
