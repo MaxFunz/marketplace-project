@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy[asyncpg]
+passlib
+aiohttp
+psycopg2-binary
+pydantic[email]
+asyncpg
+python-multipart
+alembic
