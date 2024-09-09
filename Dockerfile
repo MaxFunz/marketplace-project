@@ -6,11 +6,6 @@ WORKDIR /app
 # Копируйте файлы проекта
 COPY . /app
 
+RUN pip install --upgrade pip
 # Установите зависимости
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Сделайте скрипт инициализации исполняемым
-RUN chmod +x /app/init_db.sh
-
-# Команда по умолчанию
-CMD ["/app/init_db.sh", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+RUN pip install -r requirements.txt
