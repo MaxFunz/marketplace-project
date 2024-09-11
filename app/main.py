@@ -1,8 +1,7 @@
 from fastapi.responses import HTMLResponse
 from app.api import auth, user
 from fastapi import FastAPI, BackgroundTasks
-from email import send_email_async
-
+from app.my_email import send_email_async
 app = FastAPI()
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
